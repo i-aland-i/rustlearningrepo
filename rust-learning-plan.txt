@@ -1,0 +1,406 @@
+================================================================================
+  RUST LEARNING PLAN — Anime/Movie Watchlist API
+  Write every line by hand. No copy-paste. No AI writing code for you.
+  Look things up in the Rust Book, docs, and forums when stuck.
+================================================================================
+
+PHASE 0: SETUP & RUST FUNDAMENTALS (before touching the API)
+══════════════════════════════════════════════════════════════
+
+The goal here is to get comfortable with Rust's core concepts by writing
+small standalone programs. Do NOT skip this — Rust's ownership model will
+bite you hard later if you don't internalize it now.
+
+0.1 — Environment Setup
+  [x] Install Rust via rustup (https://rustup.rs)
+  [x] Verify: run `rustc --version` and `cargo --version`
+  [x] Pick your editor — VS Code + rust-analyzer extension recommended
+  [x] Create your first project: `cargo new hello_rust` and run it
+  [x] Read: Rust Book Chapter 1 (https://doc.rust-lang.org/book/)
+
+0.2 — Variables, Types & Functions
+  [ ] Write a program that declares immutable and mutable variables
+  [ ] Experiment: try to reassign an immutable variable, read the error
+  [ ] Write functions that take parameters and return values
+  [ ] Use basic types: i32, f64, bool, String, &str
+  [ ] Write a function that takes a string slice (&str) and returns a String
+  [ ] Use tuples and destructuring
+  [ ] Read: Rust Book Chapters 2-3
+
+0.3 — Ownership, Borrowing & Lifetimes (THE critical concept)
+  [ ] Write a program that moves a String into a function — see the move error
+  [ ] Fix it by borrowing with &
+  [ ] Write a function that takes &mut String and modifies it
+  [ ] Experiment: try to have two &mut references at once, read the error
+  [ ] Write a function that returns a reference — hit the lifetime error
+  [ ] Fix it with lifetime annotations
+  [ ] Write a program where you pass ownership into a vec, then try to use
+      the original — understand why it fails
+  [ ] Read: Rust Book Chapter 4 (read it twice, seriously)
+
+0.4 — Structs, Enums & Pattern Matching
+  [ ] Define a struct `Show` with fields: title, genre, episodes, rating
+  [ ] Implement methods on Show using `impl Show { }`
+  [ ] Create an enum `WatchStatus` with variants: Planning, Watching,
+      Completed, Dropped
+  [ ] Write a function using `match` that returns a message for each status
+  [ ] Use Option<f64> for rating (shows without ratings yet)
+  [ ] Write a match on Option — handle Some and None
+  [ ] Use if let for a single-variant check
+  [ ] Read: Rust Book Chapters 5-6
+
+0.5 — Collections & Iterators
+  [ ] Create a Vec<Show> and push shows into it
+  [ ] Iterate over the vec with a for loop
+  [ ] Use .iter().filter() to find shows with rating > 8.0
+  [ ] Use .iter().map() to extract just the titles
+  [ ] Use .iter().find() to find a show by title
+  [ ] Sort shows by rating using .sort_by()
+  [ ] Use a HashMap<String, Vec<Show>> to group shows by genre
+  [ ] Read: Rust Book Chapter 8
+
+0.6 — Error Handling
+  [ ] Write a function that returns Result<T, E>
+  [ ] Use the ? operator to propagate errors
+  [ ] Create a custom error enum with multiple variants
+  [ ] Parse a string to a number and handle the error case
+  [ ] Write a function that reads a file and returns Result<String, io::Error>
+  [ ] Read: Rust Book Chapter 9
+
+0.7 — Traits
+  [ ] Implement Display trait for your Show struct (custom printing)
+  [ ] Implement Display for your WatchStatus enum
+  [ ] Create your own trait (e.g., `Reviewable`) and implement it for Show
+  [ ] Write a function that takes `impl Display` as a parameter
+  [ ] Understand the difference between impl Trait and dyn Trait
+  [ ] Read: Rust Book Chapter 10
+
+0.8 — Serialization Checkpoint
+  [ ] Add serde and serde_json to a new cargo project
+  [ ] Derive Serialize and Deserialize on your Show struct
+  [ ] Serialize a Show to a JSON string and print it
+  [ ] Deserialize a JSON string back into a Show
+  [ ] Handle a deserialization error (malformed JSON)
+  [ ] This is your first real dependency — read how Cargo.toml works
+  [ ] Read: Rust Book Chapter 14 (Cargo & crates.io)
+
+0.9 — Mini Project: CLI Watchlist Manager
+  [ ] Create a new project: `cargo new watchlist-cli`
+  [ ] Build a CLI tool that manages a watchlist stored in a JSON file
+  [ ] Support commands: add, list, update-status, review, delete
+  [ ] Use your Show struct, WatchStatus enum, and serde from earlier
+  [ ] Read/write the JSON file using std::fs
+  [ ] Handle all errors with Result — no unwrap() in the main logic
+  [ ] This ties together ownership, enums, traits, error handling, and serde
+      in one real program before you add web framework complexity
+
+0.10 — Async Rust Basics
+  [ ] Add tokio to a small project: `tokio = { version = "1", features = ["full"] }`
+  [ ] Understand what `#[tokio::main]` does and why you need it
+  [ ] Write a few async functions, use `.await`
+  [ ] Make an async function that simulates a delay with tokio::time::sleep
+  [ ] Write two async tasks and run them concurrently with tokio::join!
+  [ ] Understand the difference between async and threads at a high level
+  [ ] Both Actix-web and SQLx are async — you need this before Phase 1
+  [ ] Read: Rust Async Book (https://rust-lang.github.io/async-book/)
+        (Chapters 1-3 are enough for now)
+
+
+PHASE 1: BUILD THE API — FOUNDATION
+════════════════════════════════════
+
+Now you start building the real project. Stack: Actix-web + SQLx + PostgreSQL.
+Create the project: `cargo new watchlist-api`
+
+Important: Set up error handling from day one. You'll create a simple
+AppError enum in 1.1 and expand it as you go. Do NOT use .unwrap() in
+route handlers — ever. Build the habit now.
+
+1.1 — Project Structure, First Route & Error Foundation
+  [ ] Add actix-web to Cargo.toml
+  [ ] Write a main() that starts an Actix-web server on port 8080
+  [ ] Create a `GET /health` endpoint that returns "OK"
+  [ ] Test it with curl or Postman — see it work
+  [ ] Create a module structure:
+        src/
+          main.rs
+          errors.rs          <-- add this from the start
+          routes/
+            mod.rs
+            health.rs
+          models/
+            mod.rs
+            show.rs
+          db/
+            mod.rs
+  [ ] Move the health route into its own file, wire it up with mod.rs
+  [ ] Create a basic AppError enum in errors.rs with variants:
+        - NotFound(String)
+        - BadRequest(String)
+        - InternalError(String)
+  [ ] Implement actix_web::ResponseError for AppError
+  [ ] Implement Display for AppError
+  [ ] Make all error responses return clean JSON:
+      { "error": "message here", "status": 404 }
+  [ ] You'll use this in every route from here on — no retrofitting later
+  [ ] Understand Rust's module system (mod, use, pub)
+  [ ] Read: Rust Book Chapter 7
+
+1.2 — Define Your Data Models
+  [ ] Create the Show struct in models/show.rs with these fields:
+        - id: i32
+        - title: String
+        - genre: String
+        - show_type: ShowType (enum: Anime, Movie, Series)
+        - episodes: Option<i32>
+        - status: WatchStatus (enum: Planning, Watching, Completed, Dropped)
+        - rating: Option<f64> (1.0 to 10.0)
+        - review: Option<String>
+        - created_at: chrono::NaiveDateTime
+        - updated_at: chrono::NaiveDateTime
+  [ ] Derive Debug, Clone, Serialize, Deserialize on Show
+  [ ] Derive Serialize, Deserialize on ShowType and WatchStatus enums
+  [ ] Create a CreateShowRequest struct (no id, no timestamps — those are auto)
+  [ ] Create an UpdateStatusRequest struct (just the new status)
+  [ ] Create a CreateReviewRequest struct (rating + review text)
+  [ ] Make sure everything compiles — `cargo build`
+
+1.3 — Database Setup
+  [ ] Install PostgreSQL if you don't have it
+  [ ] Create a database: `createdb watchlist`
+  [ ] Add sqlx, sqlx-cli, and dotenv to Cargo.toml
+  [ ] Install sqlx-cli: `cargo install sqlx-cli --features postgres`
+  [ ] Create a .env file with DATABASE_URL
+  [ ] NOTE: sqlx::query_as!() checks your queries against the real database
+      at compile time. Your DATABASE_URL must be valid and the DB must be
+      running when you run `cargo build`. This trips everyone up — now you
+      know.
+  [ ] Set up migrations with sqlx-cli:
+        sqlx migrate add create_shows_table
+  [ ] Write the SQL migration:
+        CREATE TABLE shows (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          genre VARCHAR(100) NOT NULL,
+          show_type VARCHAR(20) NOT NULL,
+          episodes INTEGER,
+          status VARCHAR(20) NOT NULL DEFAULT 'planning',
+          rating FLOAT,
+          review TEXT,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+  [ ] Run: `sqlx migrate run`
+  [ ] Connect to the database from main.rs using sqlx::PgPool
+  [ ] Pass the pool into Actix-web's app_data so routes can access it
+  [ ] Verify the connection works on startup (log a message)
+
+1.4 — POST /shows — Add a Show
+  [ ] Create the route handler function in routes/shows.rs
+  [ ] Accept JSON body using web::Json<CreateShowRequest>
+  [ ] Validate: title must not be empty, genre must not be empty
+  [ ] Write the SQL INSERT query using sqlx::query_as!()
+  [ ] Return the created show as JSON with status 201
+  [ ] Handle database errors — return AppError::InternalError
+  [ ] Handle validation errors — return AppError::BadRequest
+  [ ] NO .unwrap() — use ? with your AppError everywhere
+  [ ] Test with Postman: add 5-10 real shows you've actually watched
+  [ ] Test error cases: empty title, missing fields, duplicate entries
+
+1.5 — GET /shows — List All Shows
+  [ ] Write the handler to SELECT * from shows
+  [ ] Return as JSON array
+  [ ] Test with Postman
+  [ ] Add query parameter filtering:
+      [ ] GET /shows?status=watching — filter by status
+      [ ] GET /shows?genre=action — filter by genre
+      [ ] GET /shows?show_type=anime — filter by type
+  [ ] Build the SQL query dynamically based on which params are present
+  [ ] Handle invalid filter values — return AppError::BadRequest
+
+1.6 — GET /shows/:id — Get a Single Show
+  [ ] Extract the id from the URL path using web::Path<i32>
+  [ ] Query the database for that specific show
+  [ ] If found, return the show as JSON
+  [ ] If not found, return AppError::NotFound
+  [ ] Test with valid and invalid IDs
+
+1.7 — CHECKPOINT: Review & Refactor
+  [ ] Re-read all your code from 1.1 through 1.6
+  [ ] You WILL see things you'd do differently now — refactor them
+  [ ] Look for repeated patterns and extract them into helpers
+  [ ] Make sure every route returns Result<HttpResponse, AppError>
+  [ ] Make sure there are zero .unwrap() calls in any route handler
+  [ ] Run `cargo clippy` and fix every warning — clippy teaches you
+      idiomatic Rust
+  [ ] Commit to git with a clean state before moving on
+
+
+PHASE 2: BUILD THE API — CORE FEATURES
+═══════════════════════════════════════
+
+2.1 — DELETE /shows/:id — Remove a Show
+  [ ] Delete the show from the database
+  [ ] Return 204 No Content on success
+  [ ] Return AppError::NotFound if show doesn't exist
+  [ ] Test: delete a show, then try to GET it
+  [ ] Simple endpoint, quick win — good warmup for this phase
+
+2.2 — PATCH /shows/:id/status — Update Watch Status
+  [ ] Accept JSON body with the new status
+  [ ] Validate that the status is a valid WatchStatus variant
+  [ ] Update the show in the database
+  [ ] Update the `updated_at` timestamp
+  [ ] Return the updated show
+  [ ] Handle: show not found (404), invalid status (400)
+  [ ] Test: move a show from Planning -> Watching -> Completed
+
+2.3 — POST /shows/:id/review — Add a Review
+  [ ] Accept JSON body with rating (f64) and review text (String)
+  [ ] Validate: rating must be between 1.0 and 10.0
+  [ ] Validate: review text must not be empty
+  [ ] Validate: show must exist
+  [ ] Bonus logic: only allow reviews for shows with status Completed
+  [ ] Update the show with the rating and review
+  [ ] Return the updated show
+  [ ] Test: try reviewing a show you haven't completed yet
+
+2.4 — GET /shows/top-rated — Your Best Shows
+  [ ] Query shows that have a rating, ordered by rating DESC
+  [ ] Return only shows that have been reviewed
+  [ ] Optional: accept a `limit` query param (default 10)
+  [ ] Test: should only show reviewed shows, highest first
+
+2.5 — PUT /shows/:id — Full Update
+  [ ] Accept a full show update (title, genre, type, episodes)
+  [ ] Validate all fields
+  [ ] Update `updated_at`
+  [ ] Return the updated show
+  [ ] Test: change a show's title and genre
+
+
+PHASE 3: MAKE IT SOLID
+═══════════════════════
+
+3.1 — Expand Error Handling
+  [ ] By now your AppError should be well-used — review it
+  [ ] Add any new variants you've found yourself needing:
+        - ValidationError(String) — distinct from BadRequest
+        - DatabaseError(String) — distinct from InternalError
+  [ ] Make sure every single route returns clean, consistent error JSON
+  [ ] Search your codebase for any remaining .unwrap() — kill them all
+  [ ] Test: every error case should return JSON like:
+      { "error": "Show not found", "status": 404 }
+
+3.2 — Input Validation
+  [ ] Add the `validator` crate
+  [ ] Add validation attributes to your request structs:
+        - title: min length 1, max 255
+        - genre: min length 1, max 100
+        - rating: range 1.0 to 10.0
+        - review: min length 1, max 5000
+  [ ] Create a helper to validate and return 400 on failure
+  [ ] Test all validation edge cases
+
+3.3 — Logging & Configuration
+  [ ] Add the `env_logger` and `log` crates
+  [ ] Add logging to each route: info for success, error for failures
+  [ ] Move configuration (port, db url) into a config struct
+  [ ] Load config from environment variables
+  [ ] Log the config on startup (but not the password!)
+
+3.4 — Connection Pool & Graceful Shutdown
+  [ ] Configure the SQLx pool size (max_connections) based on your needs
+  [ ] Understand why pool size matters — too many connections = DB overload
+  [ ] Set up Actix's graceful shutdown so in-flight requests complete
+      before the server stops
+  [ ] Test: start the server, make a request, then Ctrl+C — it should
+      finish the request before exiting
+
+3.5 — Pagination
+  [ ] Add `page` and `per_page` query params to GET /shows
+  [ ] Default: page=1, per_page=20
+  [ ] Use LIMIT and OFFSET in SQL
+  [ ] Return pagination metadata in the response:
+      { "data": [...], "page": 1, "per_page": 20, "total": 47 }
+  [ ] Test: add 30+ shows, paginate through them
+
+
+PHASE 4: STRETCH GOALS (pick what interests you)
+═════════════════════════════════════════════════
+
+These are optional but each one teaches you something valuable.
+Recommended priority: Testing > Statistics > Search > the rest.
+
+4.1 — Testing (strongly recommended — do this one)
+  [ ] Write unit tests for your validation logic
+  [ ] Write unit tests for your error types
+  [ ] Write integration tests that hit real endpoints with a test database
+  [ ] Create a test helper that sets up a fresh DB and tears it down
+  [ ] Use `#[cfg(test)]` and `#[actix_web::test]`
+  [ ] Aim for tests on every error path
+  [ ] Test your pagination logic with known data sets
+  [ ] Read: Rust Book Chapter 11
+
+4.2 — Statistics Endpoint
+  [ ] GET /stats — returns:
+        - total shows
+        - shows by status (how many watching, completed, etc.)
+        - average rating
+        - most watched genre
+  [ ] Write this as a single SQL query or a few aggregation queries
+  [ ] This is great practice for SQL GROUP BY and aggregate functions
+
+4.3 — Search
+  [ ] GET /shows/search?q=naruto — full text search on title
+  [ ] Use SQL ILIKE or PostgreSQL full-text search
+  [ ] Return matching shows sorted by relevance
+
+4.4 — Tags/Categories
+  [ ] Create a tags table and a show_tags junction table
+  [ ] Add endpoints to add/remove tags from shows
+  [ ] Filter shows by tag: GET /shows?tag=isekai
+  [ ] This teaches you many-to-many relationships
+
+4.5 — Authentication (JWT)
+  [ ] Add user registration and login endpoints
+  [ ] Issue JWT tokens on login
+  [ ] Protect write endpoints with auth middleware
+  [ ] Each user sees only their own shows
+  [ ] This teaches you middleware, hashing (argon2), and JWT
+  [ ] NOTE: this is a big chunk of work — consider saving for a second
+      project if you're feeling fatigued
+
+4.6 — Dockerize
+  [ ] Write a Dockerfile for your Rust API
+  [ ] Write a docker-compose.yml with API + PostgreSQL
+  [ ] Make sure it builds and runs from scratch
+  [ ] Document the setup in a README
+
+
+RULES FOR YOURSELF
+══════════════════
+
+1. Type every line of code yourself. No copy-paste from AI or tutorials.
+2. When you hit an error, read it carefully. Rust errors are excellent.
+3. Use `cargo check` constantly — it's faster than `cargo build`.
+4. Run `cargo clippy` after every section — it teaches idiomatic Rust.
+5. Don't move to the next checkbox until the current one compiles and works.
+6. If you're stuck for 30+ minutes, look it up in the Rust Book or docs.
+7. Commit to git after every completed section (e.g., after finishing 1.4).
+8. Take breaks. Rust is mentally taxing at first. That's normal.
+9. When you come back after a break, re-read your last few functions.
+   If you can't explain them, you didn't learn them — redo them.
+
+
+RESOURCES
+═════════
+
+- The Rust Book: https://doc.rust-lang.org/book/
+- Rust by Example: https://doc.rust-lang.org/rust-by-example/
+- Rust Async Book: https://rust-lang.github.io/async-book/
+- Actix-web docs: https://actix.rs/docs/
+- SQLx docs: https://docs.rs/sqlx/latest/sqlx/
+- Serde docs: https://serde.rs/
+- Rust error index: https://doc.rust-lang.org/error_codes/
+- Cargo Clippy: https://doc.rust-lang.org/clippy/
