@@ -19,8 +19,8 @@ bite you hard later if you don't internalize it now.
   [x] Read: Rust Book Chapter 1 (https://doc.rust-lang.org/book/)
 
 0.2 — Variables, Types & Functions
-  [ ] Write a program that declares immutable and mutable variables
-  [ ] Experiment: try to reassign an immutable variable, read the error
+  [x] Write a program that declares immutable and mutable variables
+  [x] Experiment: try to reassign an immutable variable, read the error
   [ ] Write functions that take parameters and return values
   [ ] Use basic types: i32, f64, bool, String, &str
   [ ] Write a function that takes a string slice (&str) and returns a String
